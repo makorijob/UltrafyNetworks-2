@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Menu, X, ArrowRight, Wifi } from "lucide-react";
+import { Menu, X, ArrowRight, Wifi, Phone } from "lucide-react";
 
 const navLinks = [
   {
@@ -153,18 +153,18 @@ export default function Navbar() {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-6 lg:gap-8">
               {navLinks.map((link) => (
-                <Link
+                <a
                   key={link.href}
                   href={link.href}
                   onClick={(e) => handleSmoothScroll(e, link.href)}
-                  className={`font-medium transition-colors duration-300 hover:text-blue-600 ${
+                  className={`font-medium transition-colors duration-300 ${
                     isScrolled
-                      ? "text-gray-700"
-                      : "text-white"
+                      ? "text-gray-700 hover:text-blue-600"
+                      : "text-white hover:text-yellow-300"
                   }`}
                 >
                   {link.label}
-                </Link>
+                </a>
               ))}
             </nav>
 
@@ -184,7 +184,7 @@ export default function Navbar() {
               <a
                 href="#contact"
                 onClick={(e) => handleSmoothScroll(e, "#contact")}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-4 lg:px-5 py-2 lg:py-3 text-xs lg:text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 lg:px-5 py-2 lg:py-3 text-xs lg:text-sm font-semibold text-blue-950 shadow-lg transition-all duration-300 hover:bg-yellow-300 hover:shadow-xl hover:-translate-y-0.5"
               >
                 Get Connected
                 <ArrowRight className="h-3 w-3 lg:h-4 lg:w-4" />
@@ -301,17 +301,17 @@ export default function Navbar() {
             <a
               href="#contact"
               onClick={(e) => handleSmoothScroll(e, "#contact")}
-              className="mt-4 sm:mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-3.5 sm:py-4 font-semibold text-white shadow-lg transition hover:shadow-xl text-sm sm:text-base"
+              className="mt-4 sm:mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3.5 sm:py-4 font-semibold text-blue-950 shadow-lg transition hover:bg-yellow-300 hover:shadow-xl text-sm sm:text-base"
             >
               Get Connected
               <ArrowRight className="h-4 w-4" />
             </a>
 
-            <div className="mt-3 sm:mt-4 flex items-center justify-center gap-3 sm:gap-4 text-xs sm:text-sm">
+            <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm">
               <a href="tel:0700541561" className="text-blue-600 font-medium">
                 Call 0700 541 561
               </a>
-              <span className="text-gray-300">|</span>
+              <span className="text-gray-300 hidden sm:inline">|</span>
               <a href="tel:0703199691" className="text-blue-600 font-medium">
                 WhatsApp 0703 199 691
               </a>
