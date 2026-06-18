@@ -322,4 +322,34 @@ export default function Home() {
 
       {/* ============ CONTACT CTA ============ */}
       <section id="contact" className="py-16 sm:py-24 px-4 sm:px-6 bg-gradient-to-br from-blue-600 to-blue-700 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(
+        <div className="absolute inset-0 bg-[radial-gradient(#ffffff15_1px,transparent_1px)] bg-[length:40px_40px]" />
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 sm:mb-6">
+            Ready to get UltrafyFiberNet?
+          </h2>
+          <p className="text-blue-50 text-base sm:text-lg max-w-xl mx-auto mb-8 sm:mb-10 leading-relaxed">
+            Tell us where you are in Thika and we'll let you know if you're in our coverage zone — most homes hear back within the hour.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+            <a
+              href="tel:0700541561"
+              className="bg-white text-blue-700 font-bold px-6 sm:px-10 py-3 sm:py-4 rounded-full text-sm sm:text-lg hover:bg-emerald-500 hover:text-white transition-all duration-300 flex items-center gap-2 sm:gap-3"
+            >
+              <Phone className="w-4 h-4 sm:w-5 sm:h-5" />
+              Call 0700 541 561
+            </a>
+            <a
+              href="https://wa.me/254703199691"
+              className="border-2 border-white/80 hover:border-white font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-full text-sm sm:text-lg hover:bg-white/10 transition-all duration-300"
+            >
+              Chat on WhatsApp
+            </a>
+          </div>
+          <p className="text-blue-200 text-xs sm:text-sm mt-4">
+            WhatsApp: 0703 199 691
+          </p>
+        </div>
+      </section>
+    </div>
+  );
+}
