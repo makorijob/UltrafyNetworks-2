@@ -1,8 +1,45 @@
+"use client";
+
 import Image from 'next/image';
-import { Phone, Wifi, Zap, ShieldCheck, Headset, MapPin, Star, ChevronRight, Camera, Sun, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { 
+  Phone, Wifi, Zap, ShieldCheck, Headset, MapPin, Star, ChevronRight, 
+  Camera, Sun, ShieldAlert, Loader2 
+} from 'lucide-react';
+
+interface Testimonial {
+  id: number;
+  name: string;
+  area: string;
+  quote: string;
+  rating: number;
+}
 
 export default function Home() {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTestimonials();
+  }, []);
+
+  const fetchTestimonials = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/testimonials?limit=3');
+      const data = await response.json();
+      
+      if (data.success) {
+        setTestimonials(data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch testimonials:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
 
@@ -11,7 +48,6 @@ export default function Home() {
         className="relative min-h-[100dvh] flex items-center bg-cover bg-center bg-no-repeat text-white overflow-hidden"
         style={{ backgroundImage: "url('/images/hero.jpg')" }}
       >
-        {/* Hero content - keep as is */}
         <div className="absolute inset-0 bg-gradient-to-b from-blue-950/80 via-blue-900/85 to-blue-700/90" />
         <div className="absolute inset-0 bg-[radial-gradient(#ffffff15_1px,transparent_1px)] bg-[length:40px_40px]" />
 
@@ -36,7 +72,6 @@ export default function Home() {
                 Premium fibre internet built for Thika homes and businesses. No buffering, no excuses — just fast, dependable connection your whole family can count on.
               </p>
 
-              {/* Offer Banner */}
               <div className="bg-yellow-400/20 backdrop-blur-md border border-yellow-400/30 rounded-2xl px-4 sm:px-6 py-3 sm:py-4 text-center">
                 <p className="text-yellow-200 font-bold text-sm sm:text-base">
                   SPECIAL OFFER: Get 1 Month Free After Installation
@@ -44,7 +79,6 @@ export default function Home() {
                 <p className="text-blue-100 text-xs sm:text-sm mt-1">Limited time offer — available for all packages</p>
               </div>
 
-              {/* Packages - Mobile Responsive Grid */}
               <div className="grid grid-cols-4 gap-2 sm:gap-4 pt-2 sm:pt-4">
                 {[
                   { speed: "5", price: "1,000", accent: "from-emerald-500 to-emerald-400" },
@@ -137,7 +171,6 @@ export default function Home() {
 
       {/* ============ PACKAGES SECTION ============ */}
       <section id="packages" className="py-16 sm:py-24 px-4 sm:px-6 bg-white">
-        {/* Keep existing packages section */}
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
             <p className="text-blue-600 font-semibold tracking-widest text-xs sm:text-sm">OUR PACKAGES</p>
@@ -219,7 +252,6 @@ export default function Home() {
 
       {/* ============ WHY CHOOSE US ============ */}
       <section className="py-16 sm:py-24 px-4 sm:px-6 bg-slate-50">
-        {/* Keep existing */}
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-12 sm:mb-16">
             <p className="text-blue-600 font-semibold tracking-widest text-xs sm:text-sm">WHY ULTRAFYFIBERNET</p>
@@ -249,7 +281,6 @@ export default function Home() {
 
       {/* ============ HOW IT WORKS ============ */}
       <section className="py-16 sm:py-24 px-4 sm:px-6 bg-white">
-        {/* Keep existing */}
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-12 sm:mb-16">
             <p className="text-blue-600 font-semibold tracking-widest text-xs sm:text-sm">GETTING STARTED</p>
@@ -280,7 +311,6 @@ export default function Home() {
 
       {/* ============ COVERAGE ============ */}
       <section id="coverage" className="py-16 sm:py-24 px-4 sm:px-6 bg-blue-950 text-white relative overflow-hidden">
-        {/* Keep existing */}
         <div className="absolute inset-0 bg-[radial-gradient(#ffffff10_1px,transparent_1px)] bg-[length:32px_32px]" />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
@@ -307,9 +337,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ============ TESTIMONIALS ============ */}
+      {/* ============ DYNAMIC TESTIMONIALS ============ */}
       <section className="py-16 sm:py-24 px-4 sm:px-6 bg-white">
-        {/* Keep existing */}
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-12 sm:mb-16">
             <p className="text-blue-600 font-semibold tracking-widest text-xs sm:text-sm">WHAT OUR CUSTOMERS SAY</p>
@@ -318,12 +347,97 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+              <span className="ml-3 text-slate-600">Loading testimonials...</span>
+            </div>
+          ) : testimonials.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-slate-500">No testimonials yet. Be the first to share your experience!</p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              {testimonials.map((t) => (
+                <div key={t.id} className="bg-slate-50 rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-slate-100 hover:shadow-lg transition-all duration-300">
+                  <div className="flex gap-1 mb-3 sm:mb-4">
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <Star 
+                        key={j} 
+                        className={`w-4 h-4 ${j < t.rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'}`} 
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm sm:text-base text-slate-700 leading-relaxed mb-4 sm:mb-6">"{t.quote}"</p>
+                  <p className="font-bold text-blue-950">{t.name}</p>
+                  <p className="text-xs sm:text-sm text-slate-500">{t.area}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ============ FAQ ============ */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 bg-slate-50">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-12 sm:mb-16">
+            <p className="text-blue-600 font-semibold tracking-widest text-xs sm:text-sm">QUESTIONS</p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-blue-950 mt-2 sm:mt-3">
+              Common questions, answered
+            </h2>
+          </div>
+
+          <div className="space-y-3 sm:space-y-4">
             {[
-              { name: "Grace Wanjiru", area: "Weitethie", quote: "Switched from mobile data and never looked back. My kids' online classes run without a single freeze now." },
-              { name: "Peter Mwangi", area: "Ngoingwa", quote: "Installation took less than two hours and support actually picks up the phone when I call." },
-              { name: "Sarah Akinyi", area: "Section 9", quote: "The 30 Mbps plan handles three of us streaming at once with no lag. Best decision for our home this year." },
-            ].map((t, i) => (
-              <div key={i} className="bg-slate-50 rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-slate-100">
-                <div className="flex gap-1 mb-3 sm:mb-4">
-                  {Array.from({ length: 5
+              { q: "Is installation really free?", a: "Yes. Once you're within our Thika coverage zone, our technician installs your router and runs the fibre line at no extra cost." },
+              { q: "Do I really get 1 month free?", a: "Yes! All new customers who sign up get their first month absolutely free after installation. This applies to all our packages." },
+              { q: "Can I upgrade my package later?", a: "Anytime. Call or WhatsApp us and we'll switch your plan before your next billing cycle." },
+              { q: "What happens if I have an outage?", a: "Our network is monitored continuously. Report it through the support line and a technician is dispatched the same day for on-site issues." },
+              { q: "Do you offer business packages?", a: "Yes, we work with shops, offices, and cyber cafes in Thika on custom plans — contact us for pricing." },
+            ].map((item, i) => (
+              <details key={i} className="group bg-white rounded-2xl border border-slate-100 px-4 sm:px-6 py-4 sm:py-5">
+                <summary className="flex items-center justify-between cursor-pointer font-semibold text-blue-950 list-none text-sm sm:text-base">
+                  {item.q}
+                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-open:rotate-90 transition-transform duration-200 flex-shrink-0 ml-4" />
+                </summary>
+                <p className="text-sm sm:text-base text-slate-600 mt-3 leading-relaxed">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============ CONTACT CTA ============ */}
+      <section id="contact" className="py-16 sm:py-24 px-4 sm:px-6 bg-gradient-to-br from-emerald-600 to-emerald-700 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(#ffffff15_1px,transparent_1px)] bg-[length:40px_40px]" />
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 sm:mb-6">
+            Ready to get UltrafyFiberNet?
+          </h2>
+          <p className="text-emerald-50 text-base sm:text-lg max-w-xl mx-auto mb-8 sm:mb-10 leading-relaxed">
+            Tell us where you are in Thika and we'll let you know if you're in our coverage zone — most homes hear back within the hour.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+            <a
+              href="tel:0700541561"
+              className="bg-white text-emerald-700 font-bold px-6 sm:px-10 py-3 sm:py-4 rounded-full text-sm sm:text-lg hover:bg-yellow-400 hover:text-blue-950 transition-all duration-300 flex items-center gap-2 sm:gap-3"
+            >
+              <Phone className="w-4 h-4 sm:w-5 sm:h-5" />
+              Call 0700 541 561
+            </a>
+            <a
+              href="https://wa.me/254703199691"
+              className="border-2 border-white/80 hover:border-white font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-full text-sm sm:text-lg hover:bg-white/10 transition-all duration-300"
+            >
+              Chat on WhatsApp
+            </a>
+          </div>
+          <p className="text-emerald-200 text-xs sm:text-sm mt-4">
+            WhatsApp: 0703 199 691
+          </p>
+        </div>
+      </section>
+    </div>
+  );
+}
