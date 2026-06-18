@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import {
   Wrench,
   Headset,
@@ -9,43 +12,32 @@ import {
   Heart,
   TrendingUp,
   GraduationCap,
+  Loader2,
 } from "lucide-react";
 
 interface Role {
+  id: number;
   title: string;
   department: string;
   location: string;
   type: string;
-  icon: typeof Wrench;
+  icon: string;
   desc: string;
+  status: string;
+  postedDate: string;
 }
 
-const openRoles: Role[] = [
-  {
-    title: "Field Technician",
-    department: "Network Operations",
-    location: "Thika",
-    type: "Full-time",
-    icon: Wrench,
-    desc: "Install and maintain fibre connections for homes and businesses, troubleshoot on-site issues, and keep our network running reliably across Thika.",
-  },
-  {
-    title: "Customer Support Agent",
-    department: "Customer Experience",
-    location: "Thika",
-    type: "Full-time",
-    icon: Headset,
-    desc: "Be the first voice customers hear — handle billing questions, technical support calls, and walk-in inquiries with patience and clarity.",
-  },
-  {
-    title: "Sales Representative",
-    department: "Sales & Marketing",
-    location: "Thika",
-    type: "Full-time",
-    icon: TrendingUp,
-    desc: "Help grow our customer base across Thika. Engage with potential clients, explain our packages, and drive adoption of fibre internet in new areas.",
-  },
-];
+const iconMap: { [key: string]: any } = {
+  Wrench: Wrench,
+  Headset: Headset,
+  TrendingUp: TrendingUp,
+  Users: Users,
+  Briefcase: Briefcase,
+  MapPin: MapPin,
+  Clock: Clock,
+  Heart: Heart,
+  GraduationCap: GraduationCap,
+};
 
 const perks = [
   { icon: Heart, title: "Health cover", desc: "Medical insurance for you and your immediate family." },
@@ -55,6 +47,36 @@ const perks = [
 ];
 
 export default function CareersPage() {
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchRoles();
+  }, []);
+
+  const fetchRoles = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/careers?status=open');
+      const data = await response.json();
+      
+      if (data.success) {
+        setRoles(data.data);
+      } else {
+        setError('Failed to load job openings');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getIcon = (iconName: string) => {
+    return iconMap[iconName] || Wrench;
+  };
+
   return (
     <div className="min-h-screen bg-white">
 
@@ -83,44 +105,71 @@ export default function CareersPage() {
             Current openings
           </h2>
 
-          <div className="space-y-4 sm:space-y-5">
-            {openRoles.map((role, i) => (
-              <div
-                key={i}
-                className="bg-slate-50 rounded-2xl sm:rounded-3xl border border-slate-100 p-5 sm:p-7 hover:shadow-lg transition-all duration-300 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6"
-              >
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-blue-950 flex items-center justify-center shrink-0">
-                  <role.icon className="w-6 h-6 sm:w-7 sm:h-7 text-yellow-400" />
-                </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+              <span className="ml-3 text-slate-600">Loading job openings...</span>
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+              {error}
+            </div>
+          ) : roles.length === 0 ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+              <p className="text-amber-800 font-medium">No open positions at the moment</p>
+              <p className="text-amber-700 text-sm mt-1">Check back soon or submit a general application below.</p>
+            </div>
+          ) : (
+            <div className="space-y-4 sm:space-y-5">
+              {roles.map((role) => {
+                const IconComponent = getIcon(role.icon);
+                return (
+                  <div
+                    key={role.id}
+                    className="bg-slate-50 rounded-2xl sm:rounded-3xl border border-slate-100 p-5 sm:p-7 hover:shadow-lg transition-all duration-300 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6"
+                  >
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-blue-950 flex items-center justify-center shrink-0">
+                      <IconComponent className="w-6 h-6 sm:w-7 sm:h-7 text-yellow-400" />
+                    </div>
 
-                <div className="flex-1">
-                  <h3 className="text-lg sm:text-xl font-bold text-blue-950">{role.title}</h3>
-                  <p className="text-slate-600 text-xs sm:text-sm leading-relaxed mt-1 sm:mt-2 mb-2 sm:mb-3 max-w-2xl">{role.desc}</p>
-                  <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-xs font-medium text-slate-500">
-                    <span className="flex items-center gap-1 sm:gap-1.5 bg-white border border-slate-200 rounded-full px-2 sm:px-3 py-1 sm:py-1.5">
-                      <Briefcase className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                      {role.department}
-                    </span>
-                    <span className="flex items-center gap-1 sm:gap-1.5 bg-white border border-slate-200 rounded-full px-2 sm:px-3 py-1 sm:py-1.5">
-                      <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                      {role.location}
-                    </span>
-                    <span className="flex items-center gap-1 sm:gap-1.5 bg-white border border-slate-200 rounded-full px-2 sm:px-3 py-1 sm:py-1.5">
-                      <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                      {role.type}
-                    </span>
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h3 className="text-lg sm:text-xl font-bold text-blue-950">{role.title}</h3>
+                        <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
+                          {role.status}
+                        </span>
+                      </div>
+                      <p className="text-slate-600 text-xs sm:text-sm leading-relaxed mt-1 sm:mt-2 mb-2 sm:mb-3 max-w-2xl">{role.desc}</p>
+                      <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-xs font-medium text-slate-500">
+                        <span className="flex items-center gap-1 sm:gap-1.5 bg-white border border-slate-200 rounded-full px-2 sm:px-3 py-1 sm:py-1.5">
+                          <Briefcase className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                          {role.department}
+                        </span>
+                        <span className="flex items-center gap-1 sm:gap-1.5 bg-white border border-slate-200 rounded-full px-2 sm:px-3 py-1 sm:py-1.5">
+                          <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                          {role.location}
+                        </span>
+                        <span className="flex items-center gap-1 sm:gap-1.5 bg-white border border-slate-200 rounded-full px-2 sm:px-3 py-1 sm:py-1.5">
+                          <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                          {role.type}
+                        </span>
+                        <span className="flex items-center gap-1 sm:gap-1.5 bg-white border border-slate-200 rounded-full px-2 sm:px-3 py-1 sm:py-1.5">
+                          Posted: {role.postedDate}
+                        </span>
+                      </div>
+                    </div>
+
+                    <Link
+                      href="/contact"
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-colors text-center shrink-0 text-sm sm:text-base"
+                    >
+                      Apply now
+                    </Link>
                   </div>
-                </div>
-
-                <Link
-                  href="/contact"
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-colors text-center shrink-0 text-sm sm:text-base"
-                >
-                  Apply now
-                </Link>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
@@ -168,4 +217,4 @@ export default function CareersPage() {
       </section>
     </div>
   );
-    }
+}
