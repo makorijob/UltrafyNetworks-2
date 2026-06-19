@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Loader2, 
   Check, 
@@ -9,14 +10,12 @@ import {
   Star, 
   Eye, 
   Search, 
-  Filter,
   ChevronDown,
-  ArrowUpDown,
-  Clock,
+  RefreshCw,
   User,
   MapPin,
-  MessageCircle,
-  RefreshCw
+  Shield,
+  Lock
 } from 'lucide-react';
 
 interface Review {
@@ -30,6 +29,7 @@ interface Review {
 }
 
 export default function ReviewAdmin() {
+  const router = useRouter();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [filteredReviews, setFilteredReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,15 +37,32 @@ export default function ReviewAdmin() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedReview, setExpandedReview] = useState<number | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState('');
 
   useEffect(() => {
-    fetchReviews();
+    // Check if already authenticated via session
+    const auth = sessionStorage.getItem('adminAuth');
+    if (auth === 'true') {
+      setIsAuthorized(true);
+      fetchReviews();
+    }
   }, []);
 
-  useEffect(() => {
-    filterReviews();
-  }, [reviews, searchTerm, statusFilter]);
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Simple password protection - change this to your desired password
+    const adminPassword = 'admin123'; // Change this!
+    if (password === adminPassword) {
+      setIsAuthorized(true);
+      sessionStorage.setItem('adminAuth', 'true');
+      fetchReviews();
+      setAuthError('');
+    } else {
+      setAuthError('Incorrect password');
+    }
+  };
 
   const fetchReviews = async () => {
     try {
@@ -54,6 +71,7 @@ export default function ReviewAdmin() {
       const data = await response.json();
       if (data.success) {
         setReviews(data.data);
+        setFilteredReviews(data.data);
       } else {
         setError('Failed to load reviews');
       }
@@ -64,10 +82,13 @@ export default function ReviewAdmin() {
     }
   };
 
+  useEffect(() => {
+    filterReviews();
+  }, [reviews, searchTerm, statusFilter]);
+
   const filterReviews = () => {
     let filtered = reviews;
     
-    // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -78,7 +99,6 @@ export default function ReviewAdmin() {
       );
     }
     
-    // Filter by status
     if (statusFilter !== 'all') {
       filtered = filtered.filter((r) => r.status === statusFilter);
     }
@@ -115,6 +135,12 @@ export default function ReviewAdmin() {
     }
   };
 
+  const handleLogout = () => {
+    sessionStorage.removeItem('adminAuth');
+    setIsAuthorized(false);
+    setPassword('');
+  };
+
   const getStatusBadge = (status: string) => {
     const styles = {
       approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -127,7 +153,7 @@ export default function ReviewAdmin() {
       rejected: 'Rejected',
     };
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${styles[status as keyof typeof styles] || styles.pending}`}>
+      <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium border ${styles[status as keyof typeof styles] || styles.pending}`}>
         {labels[status as keyof typeof labels] || status}
       </span>
     );
@@ -143,6 +169,54 @@ export default function ReviewAdmin() {
     return counts;
   };
 
+  // Login Screen
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+        <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 sm:p-8 max-w-md w-full">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-blue-950 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-yellow-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-blue-950">Admin Access</h2>
+            <p className="text-slate-500 text-sm mt-1">Enter password to manage reviews</p>
+          </div>
+          
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter admin password..."
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
+                autoFocus
+              />
+            </div>
+            
+            {authError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">
+                {authError}
+              </div>
+            )}
+            
+            <button
+              type="submit"
+              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl transition-all duration-300"
+            >
+              Access Dashboard
+            </button>
+            
+            <p className="text-xs text-slate-400 text-center mt-4">
+              Protected area. Authorized personnel only.
+            </p>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   const counts = getStatusCounts();
 
   if (loading) {
@@ -157,100 +231,104 @@ export default function ReviewAdmin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 p-4 sm:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 p-3 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-blue-950 flex items-center gap-3">
-              <span className="bg-gradient-to-r from-emerald-500 to-emerald-600 w-2 h-10 rounded-full" />
-              Review Management
-            </h1>
-            <p className="text-slate-500 text-sm mt-1">
-              Manage customer reviews and testimonials
-            </p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+          <div className="w-full sm:w-auto">
+            <div className="flex items-center gap-3">
+              <span className="bg-gradient-to-r from-emerald-500 to-emerald-600 w-1.5 sm:w-2 h-8 sm:h-10 rounded-full" />
+              <div>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-blue-950">
+                  Review Management
+                </h1>
+                <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
+                  Manage customer reviews and testimonials
+                </p>
+              </div>
+            </div>
           </div>
-          <button
-            onClick={fetchReviews}
-            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 px-4 py-2.5 rounded-xl border border-slate-200 transition-all duration-200 hover:shadow-md text-sm font-medium"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-all duration-200">
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Total</p>
-            <p className="text-3xl font-bold text-blue-950 mt-1">{counts.all}</p>
-            <p className="text-xs text-slate-400 mt-1">All reviews</p>
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-all duration-200">
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Approved</p>
-            <p className="text-3xl font-bold text-emerald-600 mt-1">{counts.approved}</p>
-            <p className="text-xs text-emerald-500 mt-1">✓ Published</p>
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-all duration-200">
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Pending</p>
-            <p className="text-3xl font-bold text-amber-600 mt-1">{counts.pending}</p>
-            <p className="text-xs text-amber-500 mt-1">⏳ Awaiting review</p>
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-all duration-200">
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Rejected</p>
-            <p className="text-3xl font-bold text-red-600 mt-1">{counts.rejected}</p>
-            <p className="text-xs text-red-500 mt-1">✕ Not published</p>
+          
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={fetchReviews}
+              className="flex items-center justify-center gap-1.5 sm:gap-2 bg-white hover:bg-slate-50 text-slate-700 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-slate-200 transition-all duration-200 hover:shadow-md text-xs sm:text-sm font-medium flex-1 sm:flex-none"
+            >
+              <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Refresh</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center justify-center gap-1.5 sm:gap-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-red-200 transition-all duration-200 text-xs sm:text-sm font-medium flex-1 sm:flex-none"
+            >
+              <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Logout</span>
+            </button>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6 mb-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="relative flex-1 w-full">
-              <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+        {/* Stats Cards - Mobile Responsive */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          {[
+            { label: 'Total', value: counts.all, color: 'text-blue-950', sub: 'All reviews' },
+            { label: 'Approved', value: counts.approved, color: 'text-emerald-600', sub: '✓ Published' },
+            { label: 'Pending', value: counts.pending, color: 'text-amber-600', sub: '⏳ Awaiting' },
+            { label: 'Rejected', value: counts.rejected, color: 'text-red-600', sub: '✕ Not published' },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 p-3 sm:p-5 hover:shadow-md transition-all duration-200">
+              <p className="text-[10px] sm:text-xs text-slate-500 font-medium uppercase tracking-wider">{stat.label}</p>
+              <p className={`text-2xl sm:text-3xl font-bold ${stat.color} mt-0.5 sm:mt-1`}>{stat.value}</p>
+              <p className="text-[8px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1">{stat.sub}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Filters - Mobile Responsive */}
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 p-3 sm:p-4 md:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 absolute left-3 sm:left-4 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search by name, area, or review..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all text-slate-900 placeholder:text-slate-400"
+                className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all text-slate-900 placeholder:text-slate-400 text-sm sm:text-base"
               />
             </div>
             
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="relative w-full sm:w-auto">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full sm:w-auto px-4 py-3 pr-10 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all appearance-none bg-white text-slate-700 cursor-pointer"
-                >
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+            <div className="relative w-full sm:w-44">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 pr-8 sm:pr-10 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all appearance-none bg-white text-slate-700 cursor-pointer text-sm sm:text-base"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm mb-6 flex items-center gap-2">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 sm:p-4 text-red-700 text-xs sm:text-sm mb-4 sm:mb-6 flex items-center gap-2">
             <X className="w-4 h-4" />
             {error}
           </div>
         )}
 
-        {/* Reviews Table */}
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+        {/* Reviews Table - Mobile Responsive */}
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
           {filteredReviews.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageCircle className="w-10 h-10 text-slate-400" />
+            <div className="text-center py-12 sm:py-16 px-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <MessageCircle className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-700 mb-1">No reviews found</h3>
-              <p className="text-slate-400 text-sm">
+              <h3 className="text-base sm:text-lg font-semibold text-slate-700 mb-1">No reviews found</h3>
+              <p className="text-slate-400 text-xs sm:text-sm">
                 {searchTerm || statusFilter !== 'all' 
                   ? 'Try adjusting your filters' 
                   : 'Customer reviews will appear here'}
@@ -258,47 +336,50 @@ export default function ReviewAdmin() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
-                    <th className="text-left px-4 py-4 text-slate-600 font-semibold text-xs uppercase tracking-wider">Name</th>
-                    <th className="text-left px-4 py-4 text-slate-600 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell">Area</th>
-                    <th className="text-left px-4 py-4 text-slate-600 font-semibold text-xs uppercase tracking-wider hidden md:table-cell">Review</th>
-                    <th className="text-left px-4 py-4 text-slate-600 font-semibold text-xs uppercase tracking-wider">Rating</th>
-                    <th className="text-left px-4 py-4 text-slate-600 font-semibold text-xs uppercase tracking-wider">Status</th>
-                    <th className="text-right px-4 py-4 text-slate-600 font-semibold text-xs uppercase tracking-wider">Actions</th>
+                    <th className="text-left px-3 sm:px-4 py-3 sm:py-4 text-slate-600 font-semibold text-[10px] sm:text-xs uppercase tracking-wider">Name</th>
+                    <th className="text-left px-3 sm:px-4 py-3 sm:py-4 text-slate-600 font-semibold text-[10px] sm:text-xs uppercase tracking-wider hidden sm:table-cell">Area</th>
+                    <th className="text-left px-3 sm:px-4 py-3 sm:py-4 text-slate-600 font-semibold text-[10px] sm:text-xs uppercase tracking-wider hidden md:table-cell">Review</th>
+                    <th className="text-left px-3 sm:px-4 py-3 sm:py-4 text-slate-600 font-semibold text-[10px] sm:text-xs uppercase tracking-wider">Rating</th>
+                    <th className="text-left px-3 sm:px-4 py-3 sm:py-4 text-slate-600 font-semibold text-[10px] sm:text-xs uppercase tracking-wider hidden xs:table-cell">Status</th>
+                    <th className="text-right px-3 sm:px-4 py-3 sm:py-4 text-slate-600 font-semibold text-[10px] sm:text-xs uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredReviews.map((review) => (
                     <tr key={review.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors duration-150">
-                      <td className="px-4 py-4">
+                      <td className="px-3 sm:px-4 py-3 sm:py-4">
                         <div>
-                          <p className="text-slate-800 font-medium flex items-center gap-2">
-                            <User className="w-4 h-4 text-slate-400" />
+                          <p className="text-slate-800 font-medium text-sm sm:text-base flex items-center gap-1.5 sm:gap-2">
+                            <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
                             {review.name}
                           </p>
-                          <p className="text-xs text-slate-400 sm:hidden mt-0.5">{review.area}</p>
+                          <p className="text-[10px] sm:text-xs text-slate-400 sm:hidden mt-0.5 flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {review.area}
+                          </p>
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-slate-600 hidden sm:table-cell">
-                        <span className="flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      <td className="px-3 sm:px-4 py-3 sm:py-4 text-slate-600 text-xs sm:text-sm hidden sm:table-cell">
+                        <span className="flex items-center gap-1 sm:gap-1.5">
+                          <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400" />
                           {review.area}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-slate-600 text-sm hidden md:table-cell">
-                        <div className="max-w-xs">
-                          {review.quote.length > 60 ? (
+                      <td className="px-3 sm:px-4 py-3 sm:py-4 text-slate-600 text-xs sm:text-sm hidden md:table-cell">
+                        <div className="max-w-[180px] sm:max-w-xs">
+                          {review.quote.length > 50 ? (
                             <>
                               {expandedReview === review.id 
                                 ? review.quote 
-                                : `${review.quote.substring(0, 60)}...`}
+                                : `${review.quote.substring(0, 50)}...`}
                               <button
                                 onClick={() => setExpandedReview(expandedReview === review.id ? null : review.id)}
-                                className="text-emerald-600 hover:text-emerald-700 font-medium text-xs ml-1"
+                                className="text-emerald-600 hover:text-emerald-700 font-medium text-[10px] sm:text-xs ml-1"
                               >
-                                {expandedReview === review.id ? 'Show less' : 'Read more'}
+                                {expandedReview === review.id ? 'less' : 'more'}
                               </button>
                             </>
                           ) : (
@@ -306,50 +387,52 @@ export default function ReviewAdmin() {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-1">
+                      <td className="px-3 sm:px-4 py-3 sm:py-4">
+                        <div className="flex items-center gap-0.5 sm:gap-1">
                           <div className="flex text-yellow-400">
                             {Array.from({ length: 5 }).map((_, i) => (
-                              <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-yellow-400' : 'text-slate-200'}`} />
+                              <Star key={i} className={`w-3 h-3 sm:w-4 sm:h-4 ${i < review.rating ? 'fill-yellow-400' : 'text-slate-200'}`} />
                             ))}
                           </div>
-                          <span className="text-xs text-slate-400 ml-1">{review.rating}</span>
+                          <span className="text-[10px] sm:text-xs text-slate-400 ml-0.5 sm:ml-1">{review.rating}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-4">{getStatusBadge(review.status)}</td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="px-3 sm:px-4 py-3 sm:py-4 hidden xs:table-cell">
+                        {getStatusBadge(review.status)}
+                      </td>
+                      <td className="px-3 sm:px-4 py-3 sm:py-4">
+                        <div className="flex items-center justify-end gap-1 sm:gap-1.5">
                           {review.status === 'pending' && (
                             <>
                               <button
                                 onClick={() => updateStatus(review.id, 'approved')}
-                                className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-200 hover:scale-110"
+                                className="p-1.5 sm:p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-200 hover:scale-110"
                                 title="Approve"
                               >
-                                <Check className="w-4 h-4" />
+                                <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               </button>
                               <button
                                 onClick={() => updateStatus(review.id, 'rejected')}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
+                                className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
                                 title="Reject"
                               >
-                                <X className="w-4 h-4" />
+                                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               </button>
                             </>
                           )}
                           <button
                             onClick={() => deleteReview(review.id)}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
+                            className="p-1.5 sm:p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
                             title="Delete"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                           <button
                             onClick={() => setExpandedReview(expandedReview === review.id ? null : review.id)}
-                            className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-all duration-200 md:hidden"
+                            className="p-1.5 sm:p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-all duration-200 md:hidden"
                             title="View full review"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                         </div>
                       </td>
@@ -361,7 +444,7 @@ export default function ReviewAdmin() {
           )}
 
           {/* Footer */}
-          <div className="bg-slate-50 border-t border-slate-100 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+          <div className="bg-slate-50 border-t border-slate-100 px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] sm:text-xs text-slate-500">
             <span>
               Showing {filteredReviews.length} of {reviews.length} reviews
             </span>
