@@ -103,15 +103,27 @@ export async function POST(request: NextRequest) {
     );
     
     const getStmt = db.prepare('SELECT * FROM services WHERE id = ?');
-    const newService = getStmt.get(info.lastInsertRowid);
+    const newService = getStmt.get(info.lastInsertRowid) as any;
     db.close();
+    
+    // Check if newService exists before spreading
+    if (!newService) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to retrieve created service' },
+        { status: 500 }
+      );
+    }
     
     return NextResponse.json({
       success: true,
-      data: { ...newService, features: JSON.parse(newService.features || '[]') },
+      data: {
+        ...newService,
+        features: JSON.parse(newService.features || '[]')
+      },
       message: 'Service added successfully',
     });
   } catch (error) {
+    console.error('Error adding service:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to add service' },
       { status: 500 }
@@ -142,8 +154,8 @@ export async function PUT(request: NextRequest) {
     `);
     
     const result = stmt.run(
-      title,
-      description,
+      title || '',
+      description || '',
       'Wifi',
       color || 'bg-blue-500',
       image || '/images/services/placeholder.jpg',
@@ -166,6 +178,7 @@ export async function PUT(request: NextRequest) {
       message: 'Service updated successfully',
     });
   } catch (error) {
+    console.error('Error updating service:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to update service' },
       { status: 500 }
@@ -202,6 +215,7 @@ export async function DELETE(request: NextRequest) {
       message: 'Service deleted successfully',
     });
   } catch (error) {
+    console.error('Error deleting service:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete service' },
       { status: 500 }
