@@ -177,6 +177,14 @@ export async function POST(request: NextRequest) {
   try {
     initializeDatabase();
     
+    const contentType = request.headers.get('content-type') || '';
+    if (!contentType.includes('multipart/form-data')) {
+      return NextResponse.json(
+        { success: false, error: 'Content-Type must be multipart/form-data' },
+        { status: 400 }
+      );
+    }
+    
     const formData = await request.formData();
     const title = formData.get('title') as string;
     const subtitle = formData.get('subtitle') as string;
@@ -188,6 +196,7 @@ export async function POST(request: NextRequest) {
     const status = formData.get('status') as string || 'active';
     const imageFile = formData.get('image') as File | null;
     
+    // Validate required fields
     if (!title || !subtitle || !description) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields: title, subtitle, description' },
@@ -195,15 +204,33 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    let imagePath = '';
-    if (imageFile) {
-      imagePath = await saveFile(imageFile);
-    } else {
+    // Validate image
+    if (!imageFile || imageFile.size === 0) {
       return NextResponse.json(
-        { success: false, error: 'Image is required' },
+        { success: false, error: 'Please select an image to upload' },
         { status: 400 }
       );
     }
+    
+    // Validate image type
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!validTypes.includes(imageFile.type)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid image format. Please use JPEG, PNG, or WebP' },
+        { status: 400 }
+      );
+    }
+    
+    // Validate image size (5MB max)
+    if (imageFile.size > 5 * 1024 * 1024) {
+      return NextResponse.json(
+        { success: false, error: 'Image size too large. Maximum 5MB allowed' },
+        { status: 400 }
+      );
+    }
+    
+    // Save image
+    let imagePath = await saveFile(imageFile);
     
     const db = new Database(DB_PATH);
     const stmt = db.prepare(`
@@ -236,7 +263,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error creating slide:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create slide' },
+      { success: false, error: (error as Error).message || 'Failed to create slide' },
       { status: 500 }
     );
   }
@@ -256,6 +283,14 @@ export async function PUT(request: NextRequest) {
       );
     }
     
+    const contentType = request.headers.get('content-type') || '';
+    if (!contentType.includes('multipart/form-data')) {
+      return NextResponse.json(
+        { success: false, error: 'Content-Type must be multipart/form-data' },
+        { status: 400 }
+      );
+    }
+    
     const formData = await request.formData();
     const title = formData.get('title') as string;
     const subtitle = formData.get('subtitle') as string;
@@ -269,7 +304,7 @@ export async function PUT(request: NextRequest) {
     
     const db = new Database(DB_PATH);
     
-    // Get existing slide - use get with number directly
+    // Get existing slide
     const getStmt = db.prepare('SELECT * FROM slides WHERE id = ?');
     const existingSlide = getStmt.get(parseInt(id)) as Slide | undefined;
     
@@ -283,6 +318,25 @@ export async function PUT(request: NextRequest) {
     
     let imagePath = existingSlide.image;
     if (imageFile && imageFile.size > 0) {
+      // Validate image type
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+      if (!validTypes.includes(imageFile.type)) {
+        db.close();
+        return NextResponse.json(
+          { success: false, error: 'Invalid image format. Please use JPEG, PNG, or WebP' },
+          { status: 400 }
+        );
+      }
+      
+      // Validate image size (5MB max)
+      if (imageFile.size > 5 * 1024 * 1024) {
+        db.close();
+        return NextResponse.json(
+          { success: false, error: 'Image size too large. Maximum 5MB allowed' },
+          { status: 400 }
+        );
+      }
+      
       // Delete old image if it exists and is not a default
       if (imagePath && !imagePath.includes('slide1.jpg') && !imagePath.includes('slide2.jpg') && 
           !imagePath.includes('slide3.jpg') && !imagePath.includes('slide4.jpg')) {
@@ -330,7 +384,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error updating slide:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update slide' },
+      { success: false, error: (error as Error).message || 'Failed to update slide' },
       { status: 500 }
     );
   }
@@ -357,7 +411,7 @@ export async function DELETE(request: NextRequest) {
     const slide = getStmt.get(parseInt(id)) as Slide | undefined;
     
     if (slide) {
-      // Delete image file if it exists
+      // Delete image file if it exists and is not a default
       const imagePath = slide.image;
       if (imagePath && !imagePath.includes('slide1.jpg') && !imagePath.includes('slide2.jpg') && 
           !imagePath.includes('slide3.jpg') && !imagePath.includes('slide4.jpg')) {
