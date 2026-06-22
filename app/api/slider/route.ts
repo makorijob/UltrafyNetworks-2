@@ -2,30 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
-import { writeFile } from 'fs/promises';
 
 const DB_PATH = path.join(process.cwd(), 'slider.db');
-const UPLOAD_DIR = path.join(process.cwd(), 'public/uploads/slider');
-
-// Ensure upload directory exists
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
-
-interface Slide {
-  id: number;
-  title: string;
-  subtitle: string;
-  description: string;
-  image: string;
-  cta_text: string;
-  cta_link: string;
-  badge: string;
-  display_order: number;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
 
 function initializeDatabase() {
   try {
@@ -61,7 +39,7 @@ function initializeDatabase() {
           'UltrafyNetworks',
           'Tuko Thika',
           'Premium fibre internet built for Thika homes and businesses.',
-          '/uploads/slider/slide1.jpg',
+          'https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?w=800&h=500&fit=crop',
           'Get Connected Now',
           '#contact',
           'Now live in Thika',
@@ -72,7 +50,7 @@ function initializeDatabase() {
           'Fibre to the Home',
           'Lightning Fast Speeds',
           'Experience the power of true fibre internet with speeds up to 30 Mbps.',
-          '/uploads/slider/slide2.jpg',
+          'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&h=500&fit=crop',
           'View Packages',
           '#packages',
           'Fibre Internet',
@@ -83,7 +61,7 @@ function initializeDatabase() {
           '1 Month Free',
           'Special Offer',
           'Sign up today and get your first month absolutely free!',
-          '/uploads/slider/slide3.jpg',
+          'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&h=500&fit=crop',
           'Claim Offer',
           '#contact',
           'Special Offer',
@@ -94,7 +72,7 @@ function initializeDatabase() {
           'UltrafyNetworks',
           'Connecting Thika',
           'Join hundreds of satisfied customers across Thika.',
-          '/uploads/slider/slide4.jpg',
+          'https://images.unsplash.com/photo-1558002038-1055907df827?w=800&h=500&fit=crop',
           'Learn More',
           '/services',
           'Trusted Provider',
@@ -118,20 +96,6 @@ function initializeDatabase() {
     console.error('❌ Error initializing slider database:', error);
     return false;
   }
-}
-
-// Helper function to save uploaded file
-async function saveFile(file: File): Promise<string> {
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-  
-  const timestamp = Date.now();
-  const ext = path.extname(file.name);
-  const filename = `${timestamp}${ext}`;
-  const filepath = path.join(UPLOAD_DIR, filename);
-  
-  await writeFile(filepath, buffer);
-  return `/uploads/slider/${filename}`;
 }
 
 // GET: Fetch all slides
@@ -171,21 +135,23 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Create a new slide
+// POST: Create a new slide with base64 image
 export async function POST(request: NextRequest) {
   try {
     initializeDatabase();
     
-    const formData = await request.formData();
-    const title = formData.get('title') as string;
-    const subtitle = formData.get('subtitle') as string;
-    const description = formData.get('description') as string;
-    const cta_text = formData.get('cta_text') as string || 'Learn More';
-    const cta_link = formData.get('cta_link') as string || '#';
-    const badge = formData.get('badge') as string || 'Featured';
-    const display_order = parseInt(formData.get('display_order') as string) || 0;
-    const status = formData.get('status') as string || 'active';
-    const imageFile = formData.get('image') as File | null;
+    const body = await request.json();
+    const { 
+      title, 
+      subtitle, 
+      description, 
+      image, 
+      cta_text, 
+      cta_link, 
+      badge, 
+      display_order, 
+      status 
+    } = body;
     
     if (!title || !subtitle || !description) {
       return NextResponse.json(
@@ -194,15 +160,12 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    if (!imageFile || imageFile.size === 0) {
+    if (!image) {
       return NextResponse.json(
-        { success: false, error: 'Please select an image' },
+        { success: false, error: 'Image is required' },
         { status: 400 }
       );
     }
-    
-    // Save image
-    let imagePath = await saveFile(imageFile);
     
     const db = new Database(DB_PATH);
     const stmt = db.prepare(`
@@ -215,12 +178,12 @@ export async function POST(request: NextRequest) {
       title,
       subtitle,
       description,
-      imagePath,
-      cta_text,
-      cta_link,
-      badge,
-      display_order,
-      status
+      image,
+      cta_text || 'Learn More',
+      cta_link || '#',
+      badge || 'Featured',
+      display_order || 0,
+      status || 'active'
     );
     
     const getStmt = db.prepare('SELECT * FROM slides WHERE id = ?');
@@ -235,7 +198,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating slide:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create slide' },
+      { success: false, error: (error as Error).message || 'Failed to create slide' },
       { status: 500 }
     );
   }
@@ -255,16 +218,18 @@ export async function PUT(request: NextRequest) {
       );
     }
     
-    const formData = await request.formData();
-    const title = formData.get('title') as string;
-    const subtitle = formData.get('subtitle') as string;
-    const description = formData.get('description') as string;
-    const cta_text = formData.get('cta_text') as string;
-    const cta_link = formData.get('cta_link') as string;
-    const badge = formData.get('badge') as string;
-    const display_order = parseInt(formData.get('display_order') as string) || 0;
-    const status = formData.get('status') as string;
-    const imageFile = formData.get('image') as File | null;
+    const body = await request.json();
+    const { 
+      title, 
+      subtitle, 
+      description, 
+      image, 
+      cta_text, 
+      cta_link, 
+      badge, 
+      display_order, 
+      status 
+    } = body;
     
     const db = new Database(DB_PATH);
     const getStmt = db.prepare('SELECT * FROM slides WHERE id = ?');
@@ -276,18 +241,6 @@ export async function PUT(request: NextRequest) {
         { success: false, error: 'Slide not found' },
         { status: 404 }
       );
-    }
-    
-    let imagePath = existingSlide.image;
-    if (imageFile && imageFile.size > 0) {
-      if (imagePath && !imagePath.includes('slide1.jpg') && !imagePath.includes('slide2.jpg') && 
-          !imagePath.includes('slide3.jpg') && !imagePath.includes('slide4.jpg')) {
-        const oldPath = path.join(process.cwd(), 'public', imagePath);
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      }
-      imagePath = await saveFile(imageFile);
     }
     
     const stmt = db.prepare(`
@@ -302,7 +255,7 @@ export async function PUT(request: NextRequest) {
       title || existingSlide.title,
       subtitle || existingSlide.subtitle,
       description || existingSlide.description,
-      imagePath,
+      image || existingSlide.image,
       cta_text || existingSlide.cta_text,
       cta_link || existingSlide.cta_link,
       badge || existingSlide.badge,
@@ -347,20 +300,6 @@ export async function DELETE(request: NextRequest) {
     }
     
     const db = new Database(DB_PATH);
-    const getStmt = db.prepare('SELECT * FROM slides WHERE id = ?');
-    const slide = getStmt.get(parseInt(id)) as Slide | undefined;
-    
-    if (slide) {
-      const imagePath = slide.image;
-      if (imagePath && !imagePath.includes('slide1.jpg') && !imagePath.includes('slide2.jpg') && 
-          !imagePath.includes('slide3.jpg') && !imagePath.includes('slide4.jpg')) {
-        const fullPath = path.join(process.cwd(), 'public', imagePath);
-        if (fs.existsSync(fullPath)) {
-          fs.unlinkSync(fullPath);
-        }
-      }
-    }
-    
     const stmt = db.prepare('DELETE FROM slides WHERE id = ?');
     const result = stmt.run(parseInt(id));
     db.close();
