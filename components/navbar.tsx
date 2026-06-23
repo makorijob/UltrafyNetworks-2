@@ -150,14 +150,19 @@ export default function Navbar() {
       >
         <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
           <div className="flex h-14 sm:h-20 items-center justify-between">
-            {/* Logo - Full Name on Left */}
+            {/* Logo - Clickable UltrafyNetworks */}
             <Link
               href="/"
-              className="flex items-center gap-2 sm:gap-3 group flex-shrink-0 min-w-0"
+              className="flex items-center gap-2 sm:gap-3 group flex-shrink-0 min-w-0 cursor-pointer"
+              onClick={() => {
+                if (pathname === '/') {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
             >
               <div className="min-w-0">
                 <h1
-                  className={`font-bold text-sm sm:text-lg md:text-xl transition-colors duration-300 truncate ${
+                  className={`font-bold text-sm sm:text-lg md:text-xl transition-colors duration-300 truncate hover:opacity-80 ${
                     isScrolled
                       ? "text-gray-900"
                       : "text-white"
@@ -259,12 +264,17 @@ export default function Navbar() {
               : "translate-x-full"
           }`}
         >
-          {/* Drawer Header - With Logo */}
+          {/* Drawer Header - With Clickable Logo */}
           <div className="flex items-center justify-between border-b border-gray-100 px-4 sm:px-6 py-4 sm:py-5">
             <Link
               href="/"
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-2 sm:gap-3"
+              onClick={() => {
+                setMobileOpen(false);
+                if (pathname === '/') {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity"
             >
               <div>
                 <h2 className="font-bold text-base sm:text-lg text-gray-900">
