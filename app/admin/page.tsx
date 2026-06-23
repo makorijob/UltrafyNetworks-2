@@ -144,6 +144,7 @@ function ServiceModal({
     features: [''],
     image: '',
     color: 'bg-blue-500',
+    status: 'active',
   });
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploading, setUploading] = useState(false);
@@ -158,6 +159,7 @@ function ServiceModal({
         features: service.features || [''],
         image: service.image || '',
         color: service.color || 'bg-blue-500',
+        status: service.status || 'active',
       });
       setImagePreview(service.image || '');
     } else {
@@ -168,6 +170,7 @@ function ServiceModal({
         features: [''],
         image: '',
         color: 'bg-blue-500',
+        status: 'active',
       });
       setImagePreview('');
     }
@@ -307,19 +310,15 @@ function ServiceModal({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Color
-              </label>
-              <div className="flex gap-2 flex-wrap mt-1 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                {['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500', 'bg-cyan-500', 'bg-indigo-500'].map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, color })}
-                    className={`w-8 h-8 rounded-full ${color} ${formData.color === color ? 'ring-2 ring-offset-2 ring-blue-600 scale-110' : ''} transition-all hover:scale-110`}
-                  />
-                ))}
-              </div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all text-slate-900 appearance-none"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
             </div>
           </div>
 
@@ -956,9 +955,9 @@ function SlideModal({ isOpen, onClose, onSave, slide, isEditing }: { isOpen: boo
         cta_text: formData.cta_text.trim(),
         cta_link: formData.cta_link.trim(),
         badge: formData.badge.trim(),
-        display_order: formData.display_order,
+        display_order: Number(formData.display_order),
         status: formData.status,
-        image: imageData,
+        image: imageData || '/images/slides/default.jpg',
       };
       
       if (!imageData && !isEditing) {
@@ -967,22 +966,8 @@ function SlideModal({ isOpen, onClose, onSave, slide, isEditing }: { isOpen: boo
         return;
       }
       
-      const response = await fetch('/api/slider', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        await onSave(dataToSend);
-        onClose();
-      } else {
-        setError(data.error || 'Failed to save slide');
-      }
+      await onSave(dataToSend);
+      onClose();
     } catch (err) {
       setError('Failed to save slide. Please try again.');
     } finally {
@@ -1013,7 +998,6 @@ function SlideModal({ isOpen, onClose, onSave, slide, isEditing }: { isOpen: boo
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Image Upload */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
               Slide Image <span className="text-red-500">*</span>
@@ -1372,29 +1356,37 @@ export default function AdminDashboard() {
       if (response.ok) {
         await fetchAllData();
         alert('Service added successfully!');
+        return true;
       } else {
-        alert('Failed to add service');
+        const error = await response.json();
+        alert(error.error || 'Failed to add service');
+        return false;
       }
     } catch (error) {
       alert('Error adding service');
+      return false;
     }
   };
 
   const handleUpdateService = async (data: any) => {
     try {
-      const response = await fetch(`/api/services?id=${editingService?.id}`, {
+      const response = await fetch(`/api/services`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ id: editingService?.id, ...data }),
       });
       if (response.ok) {
         await fetchAllData();
         alert('Service updated successfully!');
+        return true;
       } else {
-        alert('Failed to update service');
+        const error = await response.json();
+        alert(error.error || 'Failed to update service');
+        return false;
       }
     } catch (error) {
       alert('Error updating service');
+      return false;
     }
   };
 
@@ -1406,7 +1398,8 @@ export default function AdminDashboard() {
         await fetchAllData();
         alert('Service deleted successfully!');
       } else {
-        alert('Failed to delete service');
+        const error = await response.json();
+        alert(error.error || 'Failed to delete service');
       }
     } catch (error) {
       alert('Error deleting service');
@@ -1424,11 +1417,15 @@ export default function AdminDashboard() {
       if (response.ok) {
         await fetchAllData();
         alert('Job added successfully!');
+        return true;
       } else {
-        alert('Failed to add job');
+        const error = await response.json();
+        alert(error.error || 'Failed to add job');
+        return false;
       }
     } catch (error) {
       alert('Error adding job');
+      return false;
     }
   };
 
@@ -1442,11 +1439,15 @@ export default function AdminDashboard() {
       if (response.ok) {
         await fetchAllData();
         alert('Job updated successfully!');
+        return true;
       } else {
-        alert('Failed to update job');
+        const error = await response.json();
+        alert(error.error || 'Failed to update job');
+        return false;
       }
     } catch (error) {
       alert('Error updating job');
+      return false;
     }
   };
 
@@ -1458,7 +1459,8 @@ export default function AdminDashboard() {
         await fetchAllData();
         alert('Job deleted successfully!');
       } else {
-        alert('Failed to delete job');
+        const error = await response.json();
+        alert(error.error || 'Failed to delete job');
       }
     } catch (error) {
       alert('Error deleting job');
@@ -1475,8 +1477,10 @@ export default function AdminDashboard() {
       });
       if (response.ok) {
         await fetchAllData();
+        alert(`Review ${status} successfully!`);
       } else {
-        alert('Failed to update review status');
+        const error = await response.json();
+        alert(error.error || 'Failed to update review status');
       }
     } catch (error) {
       alert('Error updating review status');
@@ -1491,7 +1495,8 @@ export default function AdminDashboard() {
         await fetchAllData();
         alert('Review deleted successfully!');
       } else {
-        alert('Failed to delete review');
+        const error = await response.json();
+        alert(error.error || 'Failed to delete review');
       }
     } catch (error) {
       alert('Error deleting review');
@@ -1509,29 +1514,37 @@ export default function AdminDashboard() {
       if (response.ok) {
         await fetchAllData();
         alert('Investment opportunity added successfully!');
+        return true;
       } else {
-        alert('Failed to add investment');
+        const error = await response.json();
+        alert(error.error || 'Failed to add investment');
+        return false;
       }
     } catch (error) {
       alert('Error adding investment');
+      return false;
     }
   };
 
   const handleUpdateInvestment = async (data: any) => {
     try {
-      const response = await fetch(`/api/invest?id=${editingInvestment?.id}`, {
+      const response = await fetch(`/api/invest`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ id: editingInvestment?.id, ...data }),
       });
       if (response.ok) {
         await fetchAllData();
         alert('Investment opportunity updated successfully!');
+        return true;
       } else {
-        alert('Failed to update investment');
+        const error = await response.json();
+        alert(error.error || 'Failed to update investment');
+        return false;
       }
     } catch (error) {
       alert('Error updating investment');
+      return false;
     }
   };
 
@@ -1543,7 +1556,8 @@ export default function AdminDashboard() {
         await fetchAllData();
         alert('Investment opportunity deleted successfully!');
       } else {
-        alert('Failed to delete investment');
+        const error = await response.json();
+        alert(error.error || 'Failed to delete investment');
       }
     } catch (error) {
       alert('Error deleting investment');
@@ -1560,9 +1574,13 @@ export default function AdminDashboard() {
       });
       if (response.ok) {
         await fetchAllData();
+        alert(`Message marked as ${status}`);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to update message status');
       }
     } catch (error) {
-      alert('Failed to update message status');
+      alert('Error updating message status');
     }
   };
 
@@ -1574,7 +1592,8 @@ export default function AdminDashboard() {
         await fetchAllData();
         alert('Message deleted successfully!');
       } else {
-        alert('Failed to delete message');
+        const error = await response.json();
+        alert(error.error || 'Failed to delete message');
       }
     } catch (error) {
       alert('Error deleting message');
@@ -1595,34 +1614,40 @@ export default function AdminDashboard() {
       if (response.ok) {
         await fetchAllData();
         alert('Slide added successfully!');
+        return true;
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to add slide');
+        return false;
       }
     } catch (error) {
       alert('Error adding slide');
+      return false;
     }
   };
 
   const handleUpdateSlide = async (data: any) => {
     try {
-      const response = await fetch(`/api/slider?id=${editingSlide?.id}`, {
+      const response = await fetch(`/api/slider`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ id: editingSlide?.id, ...data }),
       });
       
       if (response.ok) {
         await fetchAllData();
         alert('Slide updated successfully!');
+        return true;
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to update slide');
+        return false;
       }
     } catch (error) {
       alert('Error updating slide');
+      return false;
     }
   };
 
@@ -1634,7 +1659,8 @@ export default function AdminDashboard() {
         await fetchAllData();
         alert('Slide deleted successfully!');
       } else {
-        alert('Failed to delete slide');
+        const error = await response.json();
+        alert(error.error || 'Failed to delete slide');
       }
     } catch (error) {
       alert('Error deleting slide');
