@@ -154,8 +154,12 @@ export async function PUT(request: NextRequest) {
   try {
     initializeDatabase();
     
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const body = await request.json();
+    console.log('📝 PUT request body:', body);
+    
+    // Get ID from body or query params
+    const id = body.id || body.serviceId;
+    
     if (!id) {
       return NextResponse.json(
         { success: false, error: 'Service ID required' },
@@ -163,7 +167,6 @@ export async function PUT(request: NextRequest) {
       );
     }
     
-    const body = await request.json();
     const { title, description, category, features, image, color, status } = body;
     
     const db = getDb();
@@ -174,28 +177,35 @@ export async function PUT(request: NextRequest) {
     
     if (!existing) {
       return NextResponse.json(
-        { success: false, error: 'Service not found' },
+        { success: false, error: `Service with ID ${id} not found` },
         { status: 404 }
       );
     }
     
-    const stmt = db.prepare(`
-      UPDATE services 
-      SET title = ?, description = ?, icon = ?, color = ?, image = ?, category = ?, features = ?, status = ?
-      WHERE id = ?
-    `);
+    // Build update query dynamically
+    const updates: string[] = [];
+    const values: any[] = [];
     
-    const result = stmt.run(
-      title || existing.title,
-      description || existing.description,
-      'Wifi',
-      color || existing.color || 'bg-blue-500',
-      image || existing.image || '/images/services/placeholder.jpg',
-      category || existing.category || 'Connectivity',
-      JSON.stringify(features || JSON.parse(existing.features || '[]')),
-      status || existing.status || 'active',
-      parseInt(id)
-    );
+    if (title !== undefined) { updates.push('title = ?'); values.push(title); }
+    if (description !== undefined) { updates.push('description = ?'); values.push(description); }
+    if (color !== undefined) { updates.push('color = ?'); values.push(color); }
+    if (image !== undefined) { updates.push('image = ?'); values.push(image); }
+    if (category !== undefined) { updates.push('category = ?'); values.push(category); }
+    if (status !== undefined) { updates.push('status = ?'); values.push(status); }
+    if (features !== undefined) { updates.push('features = ?'); values.push(JSON.stringify(features)); }
+    
+    if (updates.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'No fields to update' },
+        { status: 400 }
+      );
+    }
+    
+    values.push(parseInt(id));
+    const query = `UPDATE services SET ${updates.join(', ')} WHERE id = ?`;
+    
+    const stmt = db.prepare(query);
+    const result = stmt.run(...values);
     
     if (result.changes === 0) {
       return NextResponse.json(
@@ -204,8 +214,16 @@ export async function PUT(request: NextRequest) {
       );
     }
     
+    // Get updated service
+    const getStmt = db.prepare('SELECT * FROM services WHERE id = ?');
+    const updatedService = getStmt.get(parseInt(id)) as any;
+    
     return NextResponse.json({
       success: true,
+      data: {
+        ...updatedService,
+        features: JSON.parse(updatedService.features || '[]')
+      },
       message: 'Service updated successfully',
     });
   } catch (error) {
@@ -223,6 +241,9 @@ export async function DELETE(request: NextRequest) {
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    
+    console.log('🗑️ DELETE request, id:', id);
+    
     if (!id) {
       return NextResponse.json(
         { success: false, error: 'Service ID required' },
@@ -238,7 +259,7 @@ export async function DELETE(request: NextRequest) {
     
     if (!existing) {
       return NextResponse.json(
-        { success: false, error: 'Service not found' },
+        { success: false, error: `Service with ID ${id} not found` },
         { status: 404 }
       );
     }
