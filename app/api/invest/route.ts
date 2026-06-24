@@ -6,6 +6,12 @@ import path from 'path';
 const DB_PATH = path.join(process.cwd(), 'invest.db');
 
 function getDb() {
+  // Ensure directory exists
+  const dir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  
   const db = new Database(DB_PATH);
   db.pragma('journal_mode = WAL');
   return db;
@@ -13,12 +19,17 @@ function getDb() {
 
 function initializeDatabase() {
   try {
-    const dbExists = fs.existsSync(DB_PATH);
     const db = getDb();
     
-    if (!dbExists) {
+    // Check if table exists
+    const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='investment_opportunities'");
+    const tableExists = tableCheck.get();
+    
+    if (!tableExists) {
+      console.log('📊 Creating investment_opportunities table...');
+      
       db.exec(`
-        CREATE TABLE IF NOT EXISTS investment_opportunities (
+        CREATE TABLE investment_opportunities (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           title TEXT NOT NULL,
           description TEXT NOT NULL,
@@ -35,6 +46,7 @@ function initializeDatabase() {
         )
       `);
       
+      // Insert sample data
       const insertStmt = db.prepare(`
         INSERT INTO investment_opportunities (
           title, description, category, icon, min_investment, 
@@ -105,6 +117,8 @@ function initializeDatabase() {
       
       insertMany(sampleInvestments);
       console.log('✅ Invest database initialized with sample data!');
+    } else {
+      console.log('✅ Investment table already exists');
     }
     
     db.close();
@@ -117,6 +131,7 @@ function initializeDatabase() {
 
 export async function GET(request: NextRequest) {
   try {
+    // Initialize database first
     initializeDatabase();
     
     const { searchParams } = new URL(request.url);
@@ -125,6 +140,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'active';
     const id = searchParams.get('id');
     
+    // Check if DB file exists
     if (!fs.existsSync(DB_PATH)) {
       return NextResponse.json({
         success: true,
@@ -194,7 +210,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ GET error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch investments' },
+      { success: false, error: 'Failed to fetch investments: ' + (error as Error).message },
       { status: 500 }
     );
   }
@@ -256,7 +272,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ POST error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create investment' },
+      { success: false, error: 'Failed to create investment: ' + (error as Error).message },
       { status: 500 }
     );
   }
@@ -359,7 +375,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('❌ PUT error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update investment' },
+      { success: false, error: 'Failed to update investment: ' + (error as Error).message },
       { status: 500 }
     );
   }
@@ -413,7 +429,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('❌ DELETE error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to delete investment' },
+      { success: false, error: 'Failed to delete investment: ' + (error as Error).message },
       { status: 500 }
     );
   }
