@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://ultrafynetwork.makorijob760.workers.dev/sitemap.xml",
+    sitemap: "https://ultrafynetwork.onpointtech.workers.dev/sitemap.xml",
   };
 }
