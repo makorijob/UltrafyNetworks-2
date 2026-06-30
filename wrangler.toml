@@ -1,7 +1,13 @@
 name = "ultrafynetworks-2"
-compatibility_date = "2026-06-29"
+main = ".open-next/worker.js"
+compatibility_date = "2026-06-30"
+compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding = "ultrafy_db"
 database_name = "ultrafy-db"
 database_id = "229d1c90-4e00-4c38-834b-485a8c72fa01"
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
