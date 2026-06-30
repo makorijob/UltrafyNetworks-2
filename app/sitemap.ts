@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://const baseUrl = ultrafynetworks-2.pages.dev";
+  const baseUrl = "https://const baseUrl = ultrafynetworks-2.worker.dev";
 
   return [
     {
