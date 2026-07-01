@@ -20,7 +20,8 @@ const sora = Sora({
   display: "swap",
 });
 
-const siteUrl = "https://ultrafynetwork-2.onpointtech.workers.dev";
+// ✅ Your live website URL
+const siteUrl = "https://ultrafynetworks-2.onpointtech.workers.dev";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
   },
 
   description:
-    "Ultrafy Networks provides high-speed fiber internet, CCTV installation, electrical installations, solar solutions, fire alarm systems, networking, and ICT services across Kenya.",
+    "Ultrafy Networks provides high-speed fiber internet, CCTV installation, electrical installations, solar solutions, fire alarm systems, networking, structured cabling, and ICT services across Kenya.",
 
   keywords: [
     "Ultrafy Networks",
@@ -87,10 +88,10 @@ export const metadata: Metadata = {
     siteName: "Ultrafy Networks",
     title: "Ultrafy Networks",
     description:
-      "Reliable fiber internet, CCTV installation, networking, electrical installations, solar solutions, and ICT services across Kenya.",
+      "Reliable fiber internet, networking, CCTV installation, electrical installations, solar solutions, fire alarm systems, and ICT services across Kenya.",
     images: [
       {
-        url: "/og-image.jpg",
+        url: `${siteUrl}/og-image.jpg`,
         width: 1200,
         height: 630,
         alt: "Ultrafy Networks",
@@ -102,12 +103,14 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Ultrafy Networks",
     description:
-      "Reliable fiber internet, networking, CCTV installation, solar, electrical, and ICT solutions across Kenya.",
-    images: ["/og-image.jpg"],
+      "Reliable fiber internet, networking, CCTV installation, electrical installations, solar solutions, fire alarm systems, and ICT services across Kenya.",
+    images: [`${siteUrl}/og-image.jpg`],
   },
 
   icons: {
     icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
   },
 };
 
@@ -125,9 +128,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col antialiased">
         <Navbar />
 
-        <main className="flex-1">
-          {children}
-        </main>
+        <main className="flex-1">{children}</main>
 
         <Footer />
 
