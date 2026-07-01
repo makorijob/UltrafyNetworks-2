@@ -20,7 +20,7 @@ const sora = Sora({
   display: "swap",
 });
 
-const siteUrl = "https://ultrafynetwork.onpointtech-2.workers.dev";
+const siteUrl = "https://ultrafynetwork-2.onpointtech.workers.dev";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
