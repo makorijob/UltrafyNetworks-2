@@ -1,11 +1,13 @@
-import { MetadataRoute } from "next";
+import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
+  const baseUrl = "https://ultrafynetworks-2.onpointtech.workers.dev";
+
   return {
     rules: {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://ultrafynetwork-2.onpointtech.workers.dev/sitemap.xml",
+    sitemap: `${baseUrl}/sitemap.xml`,
   };
 }
